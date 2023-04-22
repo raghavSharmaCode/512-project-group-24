@@ -1,0 +1,168 @@
+---
+title: "Models"
+output: html_document
+date: "2023-04-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Ridge and Lasso Regression
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+
+df <- read.csv('df_normalized_encoded.csv')
+
+head(df)
+```
+
+# Lasso Regression 
+
+```{r}
+
+# Lasso Regression 
+
+library(tidyverse)
+library(glmnet)
+
+
+
+# Split data into training and testing sets
+set.seed(123) # set seed for reproducibility
+train_index <- sample(nrow(df), 0.8 * nrow(df)) # use 80% of data for training
+train_data <- df[train_index,]
+test_data <- df[-train_index,]
+
+# Prepare data for modeling
+X_train <- train_data %>% select(-diameter) %>% as.matrix()
+y_train <- train_data$diameter
+
+# Fit lasso regression model using cross-validation to select lambda
+cv_model <- cv.glmnet(x = X_train, y = y_train, alpha = 1, nfolds = 10)
+
+# Select lambda with the lowest cross-validation error
+lambda <- cv_model$lambda.min
+
+# Fit lasso regression model using the selected lambda
+lasso_model <- glmnet(x = X_train, y = y_train, alpha = 1, lambda = lambda)
+
+# Prepare test data for prediction
+X_test <- test_data %>% select(-diameter) %>% as.matrix()
+y_test <- test_data$diameter
+
+# Make predictions on the test data
+y_pred <- predict(lasso_model, newx = X_test)
+
+# Calculate R-squared and RMSE
+r_squared <- cor(y_pred, y_test)^2
+rmse <- sqrt(mean((y_pred - y_test)^2))
+
+# Print the coefficients, intercept, lambda, R-squared, and RMSE of the model
+# print("Coefficients:")
+# print(coef(lasso_model)[-1]) # exclude intercept
+# print("Intercept:")
+# print(lasso_model$coefficients[1])
+# print("Lambda:")
+# print(lambda)
+print("R-squared:")
+print(r_squared)
+print("RMSE:")
+print(rmse)
+```
+
+
+
+```{r}
+
+library(kableExtra)
+astcoef <- coef(lasso_model)
+summ = summary(astcoef)
+Acoef <- data.frame(Variable=rownames(astcoef)[summ$i], coefficient=summ$x)
+
+Acoef %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width=F, position="center")
+```
+
+# Ridge Regression 
+
+```{r}
+
+library(tidyverse)
+library(glmnet)
+
+# Split data into training and testing sets
+set.seed(123) # set seed for reproducibility
+train_index <- sample(nrow(df), 0.8 * nrow(df)) # use 80% of data for training
+train_data <- df[train_index,]
+test_data <- df[-train_index,]
+
+# Prepare data for modeling
+X_train <- train_data %>% select(-diameter) %>% as.matrix()
+y_train <- train_data$diameter
+
+# Fit ridge regression model using cross-validation to select lambda
+cv_model <- cv.glmnet(x = X_train, y = y_train, alpha = 0, nfolds = 10)
+
+# Select lambda with the lowest cross-validation error
+lambda <- cv_model$lambda.min
+
+# Fit ridge regression model using the selected lambda
+ridge_model <- glmnet(x = X_train, y = y_train, alpha = 0, lambda = lambda)
+
+# Prepare test data for prediction
+X_test <- test_data %>% select(-diameter) %>% as.matrix()
+y_test <- test_data$diameter
+
+# Make predictions on the test data
+y_pred <- predict(ridge_model, newx = X_test)
+
+# Calculate R-squared and RMSE
+r_squared <- cor(y_pred, y_test)^2
+rmse <- sqrt(mean((y_pred - y_test)^2))
+
+# Print the coefficients, intercept, lambda, R-squared, and RMSE of the model
+# print("Coefficients:")
+# print(coef(ridge_model)[-1]) # exclude intercept
+# print("Intercept:")
+# print(ridge_model$coefficients[1])
+# print("Lambda:")
+# print(lambda)
+print("R-squared:")
+print(r_squared)
+print("RMSE:")
+print(rmse)
+
+
+```
+
+```{r}
+
+library(kableExtra)
+astcoef <- coef(ridge_model)
+summ = summary(astcoef)
+Acoef <- data.frame(Variable=rownames(astcoef)[summ$i], coefficient=summ$x)
+
+Acoef %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = "striped", full_width=F, position="center")
+```
+
+
+```{r}
+
+as.vector(rownames(astcoef))
+```
+
+
+
+
+
+
+
+
