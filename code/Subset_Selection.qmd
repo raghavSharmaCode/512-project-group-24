@@ -1,0 +1,409 @@
+---
+title: "Forward and Backward Subset Selection"
+author: Tegveer Ghura
+output:
+  html_document:
+    code_folding: show
+embed-resources: true
+---
+
+# Import Data and Init Packages
+
+```{r, message=FALSE, warning=FALSE}
+require(ISLR)
+require(MASS)
+require(glmnet)
+require(leaps)
+library(tidyverse)
+library(kableExtra)
+set.seed(82737)
+```
+
+```{r, message=FALSE, warning=FALSE}
+df <- read.csv("../../asteroid_cleaned.csv")
+
+# As.factor categorical variables
+
+df$near_earth_object_N <- as.factor(df$near_earth_object_N)
+df$near_earth_object_Y <- as.factor(df$near_earth_object_Y)
+df$potential_hazardous_asteroid_N <- as.factor(df$potential_hazardous_asteroid_N)
+df$potential_hazardous_asteroid_Y <- as.factor(df$potential_hazardous_asteroid_Y)
+
+# Exclude 'neo' and 'pha' columns
+cols_to_exclude <- c("near_earth_object_Y", "near_earth_object_N", 
+                     "potential_hazardous_asteroid_Y", "potential_hazardous_asteroid_N")
+df_excluded <- df %>%
+  select(-one_of(cols_to_exclude))
+
+# Normalize the remaining columns using scale()
+df_normalized <- df_excluded %>%
+  mutate(across(everything(), scale))
+
+# Add back the excluded columns
+df_normalized$near_earth_object <- df$near_earth_object
+df_normalized$potential_hazardous_asteroid <- df$potential_hazardous_asteroid
+
+# Using 70-30 train-test split 
+sample <- sample(length(df[,1]), 0.7 * length(df[, 1]))
+train <- df[sample, ]
+test  <- df[-sample, ]
+```
+
+# Linear Model (Baseline) With All Predictors
+Fit a linear model using least squares on the training set, and print the test error obtained.
+
+```{r, warning=FALSE}
+fit = lm(diameter ~ ., data = train)
+
+stargazer::stargazer(fit, type = "text", summary = TRUE, title = "Full Regression Model for Asteroid Dataset", report = "vc*stp", ci = TRUE)
+
+y_pred = predict.lm(fit, newdata = test)
+cat("RMSE on the test data is: ", sqrt(mean((test$diameter - y_pred)^2)))
+```
+
+# Best Subset Selection for Asteroid Data
+
+```{r, message=FALSE, warning=FALSE}
+regfit.full=regsubsets(diameter~.,df, nbest = 1, nvmax = 16, method="exhaustive")
+reg.summary <- summary(regfit.full)
+```
+
+```{r, message=FALSE, warning=FALSE}
+cat("Best model per C_p :", which.min(reg.summary$cp))
+cat("\nBest model per BIC :", which.min(reg.summary$bic))
+cat("\nBest model per Adj R^2 :", which.max(reg.summary$adjr2))
+```
+
+```{r, message=FALSE, warning=FALSE}
+# Extract the 13 coefficients from reg.summary
+coef(regfit.full, id=13)
+```
+
+```{r, message=FALSE, warning=FALSE}
+par(mfrow=c(2,2))
+plot(reg.summary$rss,xlab="Number of Variables",ylab="RSS",type="l")
+
+plot(reg.summary$adjr2,xlab="Number of Variables",ylab="Adjusted RSq",type="l")
+
+m=which.max(reg.summary$adjr2)
+points(m,reg.summary$adjr2[11], col="red",cex=2,pch=20)
+```
+
+```{r, message=FALSE, warning=FALSE}
+plot(reg.summary$cp,xlab="Number of Variables",ylab="Cp",type='l')
+m=which.min(reg.summary$cp)
+points(m,reg.summary$cp[13],col="red",cex=2,pch=20)
+```
+
+```{r, message=FALSE, warning=FALSE}
+m=which.min(reg.summary$bic)
+plot(reg.summary$bic,xlab="Number of Variables",ylab="BIC",type='l')
+points(m,reg.summary$bic[13],col="red",cex=2,pch=20)
+```
+
+```{r, message=FALSE, warning=FALSE}
+plot(regfit.full,scale="r2")
+```
+
+```{r, message=FALSE, warning=FALSE}
+plot(regfit.full,scale="adjr2")
+```
+
+```{r, message=FALSE, warning=FALSE}
+plot(regfit.full,scale="Cp")
+```
+
+```{r, message=FALSE, warning=FALSE}
+plot(regfit.full,scale="bic")
+```
+
+```{r, message=FALSE, warning=FALSE}
+coef(regfit.full,13)
+```
+
+## Poster Graph: Best Subset Selection
+
+```{r, message=FALSE, warning=FALSE, fig.width=8, fig.height=4}
+df.reg.summary <- data.frame(adjr2 = reg.summary$adjr2, bic = reg.summary$bic, cp = reg.summary$cp)
+jpeg('best_subset.jpg', units = "px", pointsize = 12, bg = "white", width = 800, height = 350, res=100)
+par(mfrow = c(1,3))
+plot(reg.summary$bic, xlab = "Number of Variables \n (a)", ylab = "BIC",
+type = "l", lwd = 1.5, cex.main = 1.15, cex.lab = 1, cex.axis = 1.05,
+font.axis = 2, font.lab = 2, main = "Number of Variables Vs. BIC", 
+panel.first = grid(nx= NULL, ny = NULL, col = "gray", lty = 2))
+points(13, reg.summary$bic[13], col="#336699", cex = 2, pch=20)
+
+plot(reg.summary$cp, xlab = "Number of Variables\n(b)", ylab = "Mallow's Cp",
+type = "l", lwd = 1.5, cex.main = 1.15, cex.lab = 1, cex.axis = 1.05,
+font.axis = 2, font.lab = 2, main = "Number of Variables Vs. Mallow's Cp",
+panel.first = grid(nx = NULL, ny = NULL, col = "gray", lty = 2))
+points(13, reg.summary$cp[13], col="#336699", cex = 2, pch=20)
+
+plot(reg.summary$adjr2, xlab = "Number of Variables\n(c)", ylab = "Adjusted R^2", 
+      type = "l", lwd = 1.5, main = "Number of Variables Vs. Adjusted R^2",
+      cex.main = 1.15, cex.lab = 1, cex.axis = 1.05, font.axis = 2,
+      font.lab = 2, panel.first = grid(nx = NULL, ny = NULL, col = "gray",lty = 2))
+points(13, reg.summary$adjr2[13], col="#336699", cex = 2, pch=20)
+dev.off()
+```
+
+Best subset selection states the above 13 predictors are the best for explaining the variance in diameter. Let's try forward and backward subset selection.
+
+```{r, message=FALSE, warning=FALSE}
+#best coefs
+
+coef(regfit.full, 13)
+```
+
+# Forward Subset Selection for Asteroid Data
+
+```{r, message=FALSE, warning=FALSE}
+regfit.fwd=regsubsets(diameter~.,data=df,nvmax=19,method="forward")
+
+regfit.fwd.summary <- summary(regfit.fwd)
+```
+```{r, message=FALSE, warning=FALSE}
+cat("Best model as per C_p :", which.min(regfit.fwd.summary$cp))
+cat("\nBest model as per BIC :", which.min(regfit.fwd.summary$bic))
+cat("\nBest model as per Adj R^2 :", which.max(regfit.fwd.summary$adjr2))
+```
+
+
+```{r, message=FALSE, warning=FALSE, fig.width=8, fig.height=4}
+par(mfrow = c(1,3))
+plot(regfit.fwd.summary$bic, xlab = "Number of Variables \n (a)", ylab = "BIC",
+type = "l", lwd = 1.5, cex.main = 1.15, cex.lab = 1, cex.axis = 1.05,
+font.axis = 2, font.lab = 2, main = "Number of Variables Vs. BIC", 
+panel.first = grid(nx= NULL, ny = NULL, col = "gray", lty = 2))
+points(13, regfit.fwd.summary$bic[13], col="#336699", cex = 2, pch=20)
+
+plot(regfit.fwd.summary$cp, xlab = "Number of Variables\n(b)", ylab = "Mallow's Cp",
+type = "l", lwd = 1.5, cex.main = 1.15, cex.lab = 1, cex.axis = 1.05,
+font.axis = 2, font.lab = 2, main = "Number of Variables Vs. Mallow's Cp",
+panel.first = grid(nx = NULL, ny = NULL, col = "gray", lty = 2))
+points(13, regfit.fwd.summary$cp[13], col="#336699", cex = 2, pch=20)
+
+plot(regfit.fwd.summary$adjr2, xlab = "Number of Variables\n(c)", ylab = "Adjusted R^2", 
+      type = "l", lwd = 1.5, main = "Number of Variables Vs. Adjusted R^2",
+      cex.main = 1.15, cex.lab = 1, cex.axis = 1.05, font.axis = 2,
+      font.lab = 2, panel.first = grid(nx = NULL, ny = NULL, col = "gray",lty = 2))
+points(13, regfit.fwd.summary$adjr2[13], col="#336699", cex = 2, pch=20)
+```
+
+```{r, message=FALSE, warning=FALSE}
+#best coefs
+
+coef(regfit.fwd, 13)
+```
+
+# Backward Subset Selection for Asteroid Data
+
+```{r, message=FALSE, warning=FALSE}
+regfit.bwd=regsubsets(diameter~.,data=df,nvmax=19,method="backward")
+
+regfit.bwd.summary <- summary(regfit.bwd)
+```
+
+```{r, message=FALSE, warning=FALSE}
+cat("Best model as per C_p :", which.min(regfit.bwd.summary$cp))
+cat("\nBest model as per BIC :", which.min(regfit.bwd.summary$bic))
+cat("\nBest model as per Adj R^2 :", which.max(regfit.bwd.summary$adjr2))
+```
+
+```{r, message=FALSE, warning=FALSE}
+#best coefs
+
+coef(regfit.bwd, 13)
+```
+
+# Lasso Regression
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4}
+# separate the response and predictors
+
+#df_filtered <- df %>% dplyr::select(-c(near_earth_object_N, near_earth_object_Y, 
+                                       #potential_hazardous_asteroid_N, potential_hazardous_asteroid_Y))
+jpeg('lasso_subset.jpg', res = 150)
+
+X <- model.matrix(diameter ~ ., data = df)[,-1]
+y <- df$diameter
+
+# split into 70-30 train-test for calculating RSE later
+
+set.seed(23433)
+train_index <- sample(1:nrow(df), size = round(0.7*nrow(df)), replace = FALSE)
+x_train <- X[train_index, ]
+y_train <- y[train_index]
+x_test <- X[-train_index, ]
+y_test <- y[-train_index]
+
+# fit the LASSO model
+Asteroid.lasso <- glmnet(x_train, y_train, alpha = 1, standardize = TRUE)
+
+# plot the trajectories of all coefficients
+plot(Asteroid.lasso, xvar = "lambda", label = TRUE)
+
+# Add a vertical line at 0 with custom color, linetype, and line width
+abline(v = 0, col = "darkblue", lty = 1, lwd = 4)
+
+# Decrease font size of labels
+par(cex.lab = 1.5)  # Change 0.8 to desired font size
+
+# Decrease distance of tick labels
+par(mgp = c(2.5, 1, 0))  # Change 0.5 to desired distance for tick labels
+dev.off()
+
+# at log lambda = 2, the number of predictors is 5, so we take e^2 as lambda in glmnet()
+
+Asteroid.lasso.1 <- glmnet(x_train, y_train, alpha = 1, 
+                         lambda=exp(2), standardize = FALSE)
+
+coef <- coef(Asteroid.lasso.1)
+
+summary.Asteroid <- summary(coef)
+
+coef.df <- data.frame(Variable = rownames(coef)[summary.Asteroid$i], 
+                      Coefficient = summary.Asteroid$x)
+
+coef.df %>% 
+  kbl() %>% 
+  kable_styling(bootstrap_options = 'striped', full_width = F, position = 'center')
+```
+
+```{r, warning=FALSE, message=FALSE}
+# at log lambda = 0, the number of predictors is 4, so we take e^0=1 as lambda in glmnet()
+
+Asteroid.lasso.1 <- glmnet(x_train, y_train, alpha = 1, 
+                         lambda=1, standardize = TRUE)
+
+coef <- coef(Asteroid.lasso.1)
+
+summary.Asteroid <- summary(coef)
+
+coef.df <- data.frame(Variable = rownames(coef)[summary.Asteroid$i], 
+                      Coefficient = summary.Asteroid$x)
+
+coef.df %>% 
+  kbl() %>% 
+  kable_styling(bootstrap_options = 'striped', full_width = F, position = 'center')
+```
+
+```{r, warning=FALSE, message=FALSE}
+# get lambda1se using CV
+cv.Asteroid <- cv.glmnet(x_train, y_train, alpha = 1)
+lambda1se <- cv.Asteroid$lambda.1se
+
+cat('1SE value of lambda is: ', lambda1se)
+```
+
+```{r, warning=FALSE, message=FALSE}
+## training RSE
+
+# obtain the cross-validated predicted values
+cv_pred <- predict(cv.Asteroid, newx = x_train, s = "lambda.1se", type = "response")
+
+# training cross-validated residual standard error
+cvrse.train <- sqrt(mean((y_train - cv_pred)^2))
+
+cat("\nCross-validated residual standard error on train set is:", cvrse.train)
+```
+
+```{r, warning=FALSE, message=FALSE}
+## test RSE
+
+# obtain the cross-validated predicted values
+cv_pred <- predict(cv.Asteroid, newx = x_test, s = "lambda.1se", type = "response")
+
+# training cross-validated residual standard error
+cvrse.test <- sqrt(mean((y_test - cv_pred)^2))
+
+cat("\nCross-validated residual standard error on test set is:", cvrse.test)
+```
+
+```{r, warning=FALSE, message=FALSE}
+
+# fit lasso regression model
+
+cv.lasso = cv.glmnet(x_train, y_train, 
+                     alpha = 1, standardize = TRUE,
+                     lambda.min.ratio = 1e-16)
+opt.lambda <- cv.lasso$lambda.min
+
+# Fit ridge regression model with optimal lambda
+lasso.model <- glmnet(x_train, y_train, alpha = 1, lambda = opt.lambda)
+
+# Calculate predicted values for test data
+y_pred <- predict(lasso.model, newx = x_test)
+
+# Calculate test MSE
+test_mse <- mean((y_test - y_pred)^2)
+
+# Report CV MSE
+cv.mse <- cv.lasso$cvm[cv.lasso$lambda == opt.lambda]
+
+cat("CV MSE is:", cv.mse)
+```
+
+```{r, warning=FALSE, message=FALSE}
+
+(coef <- coef(lasso.model))
+```
+
+# Ridge Regression 
+
+```{r, warning=FALSE, message=FALSE}
+
+set.seed(29398)
+train = sample(length(df[, 1]), 0.7 * length(df[,1]))
+
+# split into 70-30 train-test
+
+# X = model.matrix(diameter ~ ., data = df)
+# X_train = X[train, ]
+# X_test = X[-train, ]
+# y_train = df$diameter[train]
+# y_test = df$diameter[-train]
+
+# fit ridge regression model
+
+cv.ridge = cv.glmnet(x_train, y_train, 
+                     alpha = 0, standardize = TRUE,
+                     lambda.min.ratio = 1e-16)
+opt.lambda <- cv.ridge$lambda.min # gives the value of lambda that gives the smallest cross-validated mean squared error (MSE)
+
+# Fit ridge regression model with optimal lambda
+ridge.model <- glmnet(x_train, y_train, alpha = 0, lambda = opt.lambda)
+
+# Calculate predicted values for test data
+y_pred <- predict(ridge.model, newx = x_test)
+
+# Calculate test MSE
+test_mse <- mean((y_test - y_pred)^2)
+
+# Report CV MSE
+cv.mse <- cv.ridge$cvm[cv.ridge$lambda == opt.lambda]
+
+cat("CV MSE is:", cv.mse)
+```
+
+```{r, warning=FALSE, message=FALSE}
+(coef <- coef(ridge.model))
+
+```
+
+
+# Linear Model (Baseline) With Lasso Predictors Normalized (4 predictors)
+Fit a linear model using least squares on the training set, and print the test error obtained.
+
+```{r, warning=FALSE}
+# Using 70-30 train-test split 
+sample <- sample(length(df_normalized[,1]), 0.7 * length(df_normalized[, 1]))
+train <- df_normalized[sample, ]
+test  <- df_normalized[-sample, ]
+fit = lm(diameter ~ data_arc+absolute_magnitude+albedo+min_orbit_intersection, data = train)
+
+stargazer::stargazer(fit, type = "text", summary = TRUE, title = "Full Regression Model for Asteroid Dataset", report = "vc*stp", ci = TRUE)
+
+y_pred = predict.lm(fit, newdata = test)
+cat("RMSE on the test data is: ", sqrt(mean((test$diameter - y_pred)^2)))
+```
