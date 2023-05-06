@@ -12,11 +12,17 @@ Precisely determining the diameter of an asteroid is a critical factor in compre
 However, accurately measuring the diameter of an asteroid is a challenging task, as it is difficult to directly observe these celestial bodies. As a result, machine learning algorithms offer a potential strategy for forecasting asteroid features based on current data.
 
 ### Data Description
-The asteroid data is provided by NASA’s Jet Propulsion Laboratory (JPL) which is a federally funded research and development center managed for NASA by Caltech. JPL maintains a database of asteroid observations and orbital information called the Small-Body Database Browser (JPL, n.d.) (“Victor Basu Kaggle Data,” n.d.).
+The asteroid data is provided by NASA’s Jet Propulsion Laboratory (JPL) which is a federally funded research and development center managed for NASA by Caltech. JPL maintains a database of asteroid observations and orbital information called the Small-Body Database Browser.
 
 The SBDB has an extensive amount of data about asteroids and other minor bodies in our solar system, including their names, designations, sizes, masses, densities, rotation periods, and albedos. It also includes information on these objects’ orbits, such as eccentricity, inclination, semimajor axis, and perihelion and aphelion distances. The database is divided into tables and sections, and users may query and download the data in a variety of forms, including CSV, JSON, and XML. The database is updated regularly with new observations and discoveries, and is publicly accessible through the JPL website.
 
 Asteroid Features can be divided into 2 main categories: Orbital and Spectral. In the original set of features the number of Spectral features are 6 times the amount of Orbital Features. More Details about each asteroid feature can be found in the Report.
+
+### Models used
+1. XGBoost
+2. Gradient Boosting
+3. MLP Regressor
+4. Random Forest Regressor
 
 ### Setup and Usage
 To set up this project, you need to:
