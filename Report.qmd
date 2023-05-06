@@ -1,0 +1,154 @@
+---
+title: Diameter Prediction of Asteroids using Machine Learning
+
+author:
+  - name: Anthony Moubarak
+  - name: Raghav Sharma
+  - name: Ramdayal Rewaria
+  - name: Tegveer Ghura
+
+date: today
+
+format: 
+  html:
+    embed-resources: true
+    self-contained: true
+    preview-links: auto
+    page-layout: full
+    toc: true
+    toc-location: left
+    
+bibliography: bibliography.bib
+---
+
+**_Abstract_** The goal of this study was to use several Machine Learning models to predict the diameter of asteroids. In addition to a Baseline Linear Regression model, four models were used: XGBoost, Gradient Boosting, MLP Regressor, and Random Forest Regressor. The Random Forest Regressor model was determined to have the greatest accuracy after training and testing, with an R-squared value of 0.972. To predict the diameter of asteroids, the model used features like absolute magnitude, data arc, minimum orbital intersection and albedo. These findings show that machine learning methods are good in predicting asteroid features and have implications for the study of space objects.
+
+## I. BACKGROUND
+Asteroids are tiny rocky or metallic bodies that circle the sun and are commonly found between Mars and Jupiter in the asteroid belt. The study of asteroids is critical for understanding the origins and growth of our solar system, as well as establishing the dangers of asteroid impacts to Earth.
+
+Identifying asteroids' physical attributes, such as size, shape, and composition, is an essential component of research. These features can be difficult to measure, especially for tiny asteroids that are difficult to detect directly. As a result, depending on current data, machine learning algorithms offer a potential strategy for forecasting asteroid features.
+
+While applications of machine learning in other astronomical subfields have recently flourished, the number of papers that applied such methods in asteroids dynamics has been more limited, with just 12 papers that tried to use such approaches in the last three years [@background]. 
+
+## II. INTRODUCTION
+Asteroids have long held a significant role in the rich history of our solar system, as they have existed since its very formation. Throughout the ages, these celestial bodies have impacted Earth on multiple occasions, resulting in mass extinctions and leaving indelible imprints on our planet. Consequently, esteemed space organizations such as NASA diligently monitor asteroids due to their potential threat to Earth, and comprehending their behavior and trajectory is of paramount importance in developing efficacious mitigation strategies.
+
+Precisely determining the diameter of an asteroid is a critical factor in comprehending its potential impact on Earth and formulating appropriate mitigation strategies. Even a minor disparity in diameter can prove to be the demarcation between a benign atmospheric entry and a calamitous impact with far-reaching consequences. 
+
+However, accurately measuring the diameter of an asteroid is a challenging task, as it is difficult to directly observe these celestial bodies. As a result, machine learning algorithms offer a potential strategy for forecasting asteroid features based on current data.
+
+### Motivation
+The dataset provided by NASA currently has over 500,000 Asteroids where the Diameter is unknown or missing. This is a huge number of asteroids that we do not know the diameter of. This is a problem because the diameter of an asteroid is a very important feature that can help us assess the impact of the asteroid on Earth. Hence, we want to use Machine Learning to predict the diameter of these asteroids.
+
+## III. DATA SCIENCE PROBLEM
+Asteroids are tiny rocky or metallic objects that circle the sun and help us understand the origins and development of our solar system. Determining physical attributes of asteroids, such as size, shape, and composition, is an essential element of research. Accurate measurements of these qualities can assist researchers in better understanding the characteristics and behavior of asteroids, as well as assessing possible threats from asteroid impacts. However, determining the physical features of asteroids may be difficult and costly, particularly for tiny objects that are difficult to detect directly.
+
+## IV. OBJECTIVE OF THE PROJECT
+The goal of this Data Science project is to create and test machine learning models that can estimate the diameter of asteroids using existing observations and attributes. We can gain insights into the general structure and composition of asteroids by forecasting their diameter, which is crucial for understanding their behavior and possible impact dangers. Specifically, the objectives of this project are:
+
+1. Gather and preprocess an asteroid observation and feature dataset that may be used to train and evaluate machine learning models.
+
+2. Develop and test different machine learning models for forecasting asteroid diameter, including XGBoost, Gradient Boosting, MLP Regressor, and Random Forest Regressor.
+
+3. Compare the accuracy and efficiency of the created models to find the best accurate and efficient model for estimating asteroid diameter.
+
+4. Analyze the significance of various factors in forecasting asteroid diameter and acquire insights into the physical properties of asteroids that are most important for successful forecasts.
+
+5. Provide a final model and insights that researchers and space agencies may use to anticipate asteroids' diameters and expand our understanding of these vital celestial objects.
+
+## V. DATA DESCRIPTION
+The asteroid data is provided by NASA's Jet Propulsion Laboratory (JPL) which is a federally funded research and development center managed for NASA by Caltech. JPL maintains a database of asteroid observations and orbital information called the Small-Body Database Browser [@dataset] [@kaggledata].
+
+The SBDB has an extensive amount of data about asteroids and other minor bodies in our solar system, including their names, designations, sizes, masses, densities, rotation periods, and albedos. It also includes information on these objects' orbits, such as eccentricity, inclination, semimajor axis, and perihelion and aphelion distances. The database is divided into tables and sections, and users may query and download the data in a variety of forms, including CSV, JSON, and XML. The database is updated regularly with new observations and discoveries, and is publicly accessible through the JPL website. 
+
+Asteroid Features can be divided into 2 main categories: Orbital and Spectral. In the original set of features the number of Spectral features are 6 times the amount of Orbital Features. More Details about each asteroid feature can be found in the Appendix.
+
+## VI. DATA CLEANING
+The data contains information on over 600,000 known asteroids and 35 features about each Asteroid. But many features have over 90% missing values and hence imputing them is not a good idea. So, we will only use the features that have less than 10% missing values. After dropping the missing values, we are left with 19 features and 136000 unique asteroids. The data is then normalized to make sure that all the features are on the same scale.
+
+## VII. EXPLORATORY DATA ANALYSIS
+
+### Preliminary Analysis to check for Relation between Features and Diameter of Asteroid {#sec-correlation}
+The Correlation Heatmap (see @fig-correlation) shows the correlation between different features of an Asteroid. The features that are highly correlated with the diameter of an asteroid are Absolute Magnitude, Mean Anomaly, Perihelion Distance, Eccentricity and Mean Motion. The features that are least correlated with the diameter of an asteroid are Longitude Node, Periihelion and Orbital Period. This warrants further analysis to determine the significance of these features in predicting the diameter of an asteroid and warrants feature selection to remove the features that are not significant in predicting the diameter of an asteroid. 
+
+![This figure shows the Correlation Heatmap between different features of an Asteroid](./images/heatmap_yes_col.png){#fig-correlation}
+
+#### Deeper Visual Analysis to check the Relation between Correlated Features {#sec-featurerelation}
+Since the correlation plot shows that there is a correlation between some of the Features of an Asteroid and it's Diameter, a deeper dive is done to check how these Features might be related to the Diameter of an Asteroid (see @fig-featurerelation). <br>
+It is pretty clear that as the diameter of an asteroid increases, the Mean Motion and Absolute Magnitude of the asteroid is lower (see @fig-meanmotdiameter and @fig-absmagdiameter). As an asteroid's diameter increases so does its mass, which influences its gravitational attraction to the sun. Because of the increased gravitational attraction, the asteroid may maintain a tighter, more stable orbit around the sun. The asteroid's Mean Motion decreases as the orbit becomes more stable. Also, as the diameter of an asteroid increases, the total surface area of the asteroid increases, but its volume increases more rapidly. This means that larger asteroids have a lower surface-to-volume ratio than smaller asteroids, which leads to less surface area per unit of mass, and therefore less total reflected light. <br>
+
+::: {#fig-featurerelation layout-ncol=2}
+
+![This figure shows how the Mean Motion is related to the Diameter of the Asteroid](./images/mean_mot_diameter.png){#fig-meanmotdiameter}
+
+![This figure shows how the Absolute Magnitude is related to the Diameter of the Asteroid](./images/abs_mag_diameter.png){#fig-absmagdiameter}
+
+Relationship of Mean Motion and Absolute Magnitude with Diameter of Asteroid
+:::
+
+## VIII. Feature Selection {#sec-featureselection}
+Since the correlation plot shows that there is a correlation between some of the Features of an Asteroid and it's Diameter (see @sec-correlation), Feature Selection was performed to reduce the dimensionality of the data so as to make sure that only those features were included which had an effect on the Diameter and also avoid Multicollinearity. 2 approaches were looked into for Feature Selection: Best/Forward/Backward Subset Selection and Lasso Regression. Both these approaches had different number of Features in the Subset. Best/Forward/Backward Subset Selection provided us with 13 Features and Lasso Regression provided us with 4 Features.<br>
+The Subset Selection method had more number of features but the original ration of 6:1 for Spectral and Orbital features was maintained while the Lasso Regression had 2 spectral and 2 orbital features (see @fig-lasso). <br>
+
+![This figure shows the Lasso Coefficient Plot for Feature Selection](./images/lasso.jpeg){#fig-lasso}
+
+## IX. MODELING AND EVALUATION {#sec-modeling}
+
+### Modeling
+
+Machine Learning algorithms are designed to learn from data for a given situation and predict result for an unknown data from similar type of situation. These algorithms are also used to solve Regression problems [@ModelPaper]. For Modeling, 4 different Regression Algorithms were used:
+
+1. XGBoost [@xgboost] – Uses gradient boosting and decision tree- based techniques to achieve high predictive accuracy and speed on structured datasets.
+
+2. MLPRegressor [@MLPRegressor] – Uses multi-layer perceptron architecture for predicting continuous numeric values.
+
+3. Gradient Boosting [@GradientBoosting] – Uses an ensemble of weak prediction models, such as decision trees, to iteratively correct the errors of previous models and achieve high accuracy on supervised learning tasks.
+
+4. Random Forest Regressor [@RandomForest] – An ensemble machine learning algorithm that uses multiple decision trees and bootstrap aggregation to predict continuous numeric values.
+
+Each Model was trained on the Training Data and then tested on the Testing Data. All the models were run on both Subsets of Features (see @sec-featureselection). These models were then compared to baseline Linear Regression model to determine which model performed the best.
+
+### Evaluation
+RMSE (Root Mean Squared Error) is the metric used to compare the four models, as it measures the difference between the predicted and actual values. It provides an intuitive understanding of the error magnitude, is sensitive to outliers, and can be easily interpreted in the context of the problem domain.
+
+All models achieved better RMSE scores than the baseline LR model, with XGBoost having the best performance, achieving a Test RMSE of 0.133 (see @fig-RMSE). @fig-parity suggests that the model's performance is better for smaller Y values, as the deviation from the line increases for larger Y values.
+
+::: {#fig-evaluation layout-ncol=2}
+
+![This figure shows the comparison of Train and Test RMSE values for all the Models](./images/rmse.png){#fig-RMSE}
+
+![The parity plot illustrates the best performing model, XGBoost, which provides further evidence that it is the best model.](./images/parityplot.png){#fig-parity}
+
+Model Evaluation using RMSE and Parity Plot
+:::
+
+## X. CONCLUSION {#sec-conclusion}
+1. The factors having the greatest prediction potential for an asteroid's diameter include the number of days spanned by the Data-Arc (Data Arc), the Minimum Orbital Intersection, Albedo, and Absolute Magnitude. These characteristics have a close relationship to the physical attributes and trajectory of an asteroid. Data Arc offers information on how long the asteroid has been seen for, which helps to enhance the accuracy of its anticipated diameter. Minimum Orbital Intersection describes the closest distance between the asteroid's orbit and the Earth's orbit, which is connected to the asteroid's possible impact danger. Albedo and Absolute Magnitude indicate the composition and reflectivity of an asteroid, which might impact its brightness and size calculation.
+
+2. Previously, asteroids entered the Earth's atmosphere, inflicting destruction and loss of life. If we can properly anticipate the diameter of an impending asteroid, we may be able to take the appropriate precautions. For example, if we know that an asteroid would make a severe impact, we may evacuate impacted regions and establish emergency response preparations. Additionally, organizations like NASA and ISRO can utilize this data to build mitigation methods for approaching near-Earth asteroids. Deflecting an asteroid away from Earth's orbit or killing it before it strikes the atmosphere are two possible options.
+
+3. Machine learning has the potential to revolutionize the area of space exploration by allowing us to swiftly and reliably examine massive volumes of data. This project serves as a proof of concept for the use of machine learning in space exploration. We can swiftly evaluate enormous datasets and acquire insights into the physical features of asteroids by creating a machine learning model to forecast their diameter. This knowledge can help us better understand the origins and evolution of our solar system, as well as increase our capacity to forecast and avoid potentially catastrophic collisions with near-Earth objects. 
+
+## XI. LIMITATIONS {#sec-limitations}
+The dataset had several limitations, including a high prevalence of missing values. Another significant limitation was the absence of a year column. Specifically, the CNEOS organization’s Close Approach Database provided the Close- Approach Date of the asteroids, including the ones in the future, up to year 2100. NASA's Jet Propulsion Laboratory database, analyzed in our paper, did not include these dates. Therefore, knowing the year of each close approach would have allowed for a comparison of asteroid characteristics over time.
+
+## Appendix {.appendix}
+
+Feature Description:
+
+1. **semi_major_axis**: the longest radius of an elliptical orbit in astronomical units (AU).<br>
+2. **eccentricity**: a measure of the shape of an elliptical orbit, ranging from 0 (perfect circle) to 1 (parabolic).<br>
+3. **inclination**: the angle between an asteroid's orbital plane and the plane of the ecliptic.<br>
+4. **long_node**: the angle between an asteroid's orbit and the reference plane, measured from the reference direction.<br>
+5. **perihelion**: the point in an asteroid's orbit where it is closest to the Sun.<br>
+6. **perihelion_dist**: the distance between an asteroid and the Sun at its closest approach (perihelion) in astronomical units.<br>
+7. **aphelion_dist**: the distance between an asteroid and the Sun at its farthest point (aphelion) in astronomical units.<br>
+8. **orbital_per**: the time it takes an asteroid to complete one orbit around the Sun in years.<br>
+9. **data_arc**: the number of days between the first and last observation of an asteroid.<br>
+10. **n_obs_used**: the total number of observations used to calculate an asteroid's orbit.<br>
+11. **abs_mag**: the absolute magnitude of an asteroid, a measure of its intrinsic brightness.<br>
+12. **albedo**: the fraction of sunlight an asteroid reflects.<br>
+13. **min_orbit_int**: the minimum orbital intersection distance, the closest distance between an asteroid's orbit and the Earth's orbit.<br>
+14. **mean_motion**: the average angular speed of an asteroid as it orbits the Sun.<br>
+15. **mean_anomaly**: the angle between an asteroid's current position and its position at perihelion.<br>
+16. **diameter**: the estimated diameter of an asteroid in kilometers.
