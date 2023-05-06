@@ -31,7 +31,7 @@ To set up this project, you need to:
     - sklearn<br>
     - xgboost<br>
 4. Run all the codes in the /codes folder for Data Cleaning, Modeling and Evaluation.<br>
-5. 
+5. Read the Report.html for detailed analysis and conclusions.
 
 ## Contributing
 If you want to contribute to this project, you can:
